@@ -7,7 +7,6 @@ load_dotenv()
 
 model = ChatOllama(model="gemma2:2b")
 
-
 # prompt 1 -> topic
 template_1  = PromptTemplate(
     template = "Write a complete research on this {topic}",
