@@ -1,9 +1,6 @@
 from langchain_ollama import ChatOllama
-from dotenv import load_dotenv
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import PromptTemplate
-
-load_dotenv()
 
 model = ChatOllama(model="gemma2:2b")
 
@@ -26,6 +23,6 @@ parser = StrOutputParser()
 chain = template_1 | model | parser | template_2 | model | parser
 
 
-result = chain.invoke({'topic':'Black Hole'})
+result = chain.invoke({'topic':'Basic Of AI'})
 
 print(result)
