@@ -22,7 +22,7 @@ quiz_prompt = PromptTemplate(
 )
 
 merge_prompt = PromptTemplate(
-    template="Merge {notes} and {quiz}. Check these don't have any kind of problem",
+    template="Combine the following notes and quiz into a single structured study document. First present the notes, then the quiz below them. \n{notes}  and  \n{quiz}",
     input_variables=['notes', 'quiz']   
 )
 
