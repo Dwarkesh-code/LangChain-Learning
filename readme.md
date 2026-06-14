@@ -10,6 +10,7 @@ Learning agentic AI development by following the CampusX LangChain playlist.
 - **05-typedict-structured-review** -- Review Summary, settiments, pros and cons
 - **06-pydantic-structured-review** -- Bettter than typedict
 - **07-string or pyndatic output parsers** -- Can generate structured data from LLMs that can not generate direct structured data
+- **08-runnables** -- that can use for make complex pipline in easy way
 
 ## Stack
 Python, LangChain, Groq, Gemini, Ollama, Streamlit
