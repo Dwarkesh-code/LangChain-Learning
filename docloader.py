@@ -1,4 +1,4 @@
-from langchain_groq import ChatGroq 
+from langchain_google_genai import ChatGoogleGenerativeAI 
 from langchain_core.prompts import PromptTemplate
 from langchain_community.document_loaders import TextLoader, PyPDFLoader, WebBaseLoader, CSVLoader
 from langchain_core.output_parsers import StrOutputParser
@@ -8,7 +8,7 @@ from pathlib import Path
 
 load_dotenv()
 
-model = ChatGroq(model="llama-3.1-8b-instant")
+model = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite")
 
 prompt = PromptTemplate(
     template="Generate summary base on Document : \n{docs} \n If Document is Nothing return 'There is No Document'.\nIn documents may be You get csv type or txt type file, generate Your answer base on file type  ",
@@ -19,18 +19,18 @@ prompt = PromptTemplate(
 
 def extchecker(file_path):
     loader = None
-    if file_path in ['.pdf', '.csv', '.txt']:
+    if file_path.suffix in ['.pdf', '.csv', '.txt']:
         
         if file_path.is_file():
             
-            if file_path == '.pdf':
-                loader = PyPDFLoader(file_path, encoding='utf-8-sig')
+            if file_path.suffix == '.pdf':
+                loader = PyPDFLoader(file_path)
             
-            elif file_path == '.txt':
-                loader = TextLoader(file_path, encoding='utf-8-sig')
+            elif file_path.suffix == '.txt':
+                loader = TextLoader(file_path, encoding='utf-8')
 
-            elif file_path == '.csv':
-                loader = CSVLoader(file_path, encoding='utf-8-sig')
+            elif file_path.suffix == '.csv':
+                loader = CSVLoader(file_path, encoding='utf-8')
             
     return loader
 
