@@ -30,7 +30,7 @@ def extchecker(file_path):
     if file_path.suffix.lower() in ['.png', '.jpg', '.jpeg', '.pyc', '.ico']:
         return None
    
-    if file_path.is_file() and ".git" not in file.parts:
+    if file_path.is_file() and ".git" not in file_path.parts:
         
         if file_path.suffix == '.pdf':
             print("py")
