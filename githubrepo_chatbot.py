@@ -12,6 +12,7 @@ from langchain_openai import OpenAIEmbeddings
 import subprocess 
 import os 
 import shutil
+import sys
 import atexit
 from pathlib import Path
 
@@ -48,8 +49,8 @@ def get_splitter(ext, lang_map):
     if lang:
         return RecursiveCharacterTextSplitter.from_language(
             language=lang,
-            chunk_size=800,
-            chunk_overlap=150
+            chunk_size=1500,
+            chunk_overlap=300
         )
     
     else:
@@ -107,25 +108,36 @@ lang_map = {
     "cobol": Language.COBOL
 }
 
+
+
 chat_history= [
     SystemMessage(content="You're an expert or helpful assistant that can explain every query base on context data and git hub repo data without halluciunate ")
 ]
 
+
 file_chunks = []
 folder_name = "temp_git_folder_repo"
-repo_url = "https://github.com/Dwarkesh-code/LimitLens"
-command=["git", "clone", repo_url, folder_name]
 
 
-remove_repo(folder_name)
 
 
-try:
-    os.makedirs(folder_name, exist_ok=True)
-    subprocess.run(command, check=True , capture_output=True ,text=True)
-except subprocess.CalledProcessError as e :
-    print("Error : ",e)
+while True:
+    repo_url = input("GitHub repo Url : ")
     
+    if repo_url == 'exit':
+        sys.exit()
+
+
+    try:
+        remove_repo(folder_name)
+        command=["git", "clone", repo_url, folder_name]
+        os.makedirs(folder_name, exist_ok=True)
+        subprocess.run(command, check=True , capture_output=True ,text=True)
+        break
+    except subprocess.CalledProcessError as e :
+        if e.returncode == 128:
+            print("Enter valid Github Url")
+  
 
 for file in Path(folder_name).rglob('*'):
     if file.is_file():
@@ -139,6 +151,7 @@ for file in Path(folder_name).rglob('*'):
 
 print("\nchunk file complete\n")
 
+#  GoogleGenerativeAIEmbeddings(model="gemini-embedding-001")
 
 embedding_model = OllamaEmbeddings(model="embeddinggemma:300m")
 model = ChatGroq(model="llama-3.1-8b-instant")
@@ -149,10 +162,19 @@ vectorstore = Chroma.from_documents(
     embedding=embedding_model,
     persist_directory="./chroma_db"
 )
+
 print("\nVectorStore complete\n")
+clean_metadata = []
+for doc in vectorstore.get(include=['metadatas']).get('metadatas', []):
+    source = doc.get('source', '').replace('temp_git_folder_repo/', '')
+    clean_metadata.append(source)
+
+metadata_set = list(set(clean_metadata))
 
 
-retriever = vectorstore.as_retriever(search_kwargs={"k":5})
+retriever = vectorstore.as_retriever( 
+    search_type="mmr", 
+    search_kwargs={"k": 6, "fetch_k": 20})
 print("\nRetriever complete\n")
 
 
@@ -167,51 +189,56 @@ router_prompt = PromptTemplate(
     You will answer only 'query answer' not make something else by Your self Try to not hallociunate and if You did't get valid answer give "README.md main file and files "
 
     Query or question : "{query}"
+
+    \n\nAlso use meta data for best answer to retriever Meta data will  help You to answer the user query like how many files and which files are important and ignore the github or some waste file that not from repo.
+
+    here is meta data : \n"{metadata}"
+
     """,
-    input_variables=['query']
+    input_variables=['query', 'metadata']
 )
 
 prompt = PromptTemplate(
-    template="""You're the expert that can answer by the contest with exact query,
+    template="""You're the github repo expert that can answer by the contest with exact query,
     chat history is a history that AI(You) and Human(user) perivious chat it will help You generate better response.But do not print the chat history okay.
+    Meta data will be also help You to answer the user query like how many files and which files are important and ignore the github or some waste file that not from repo.
 
     query: "{query}",
 
     context: \n"{context}",
     \n\n\n
-    chat history : \n"{chat_history}" """,
-    input_variables=[ 'query', 'context', 'chat_history']
+    chat history : \n"{chat_history}" 
+    
+    \n\nMetaData: "{metadata}"
+
+    """,
+    input_variables=[ 'query', 'context', 'chat_history', 'metadata']
 )
 
 parser = StrOutputParser()
 
 while True:
-   
+    print("\n\n\n")
     query = input("Your Query: ")
 
     if query == "exit":
         break
 
-    router_query = (router_prompt| router_model | parser).invoke({"query":query})
+    router_query = (router_prompt| router_model | parser).invoke({"query":query, "metadata":metadata_set})
     print("\nRouter Query done\n")
+    print("\nrouter query :  ", router_query,"\n\n")
 
     context_docs = retriever.invoke(router_query)
 
+    
     context_text = "\n\n".join([doc.page_content for doc in context_docs])
-
+    print("context:   ",context_text)
     chain = prompt | model | parser
 
-    result = chain.invoke({"query": query, "context":context_text, "chat_history": chat_history})
+    result = chain.invoke({"query": query, "context":context_text, "chat_history": chat_history, "metadata":metadata_set})
     
-    print(result)
+    print("AI: ",result,"\n\n")
 
     chat_history.append(HumanMessage(content=query))
     chat_history.append(AIMessage(content=result))
     chat_history = get_trim(chat_history, model)
-
-    
-
-print_history()
-
-remove_repo(folder_name)
-cleanup()
