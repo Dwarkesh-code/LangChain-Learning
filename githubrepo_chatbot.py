@@ -275,4 +275,4 @@ if query:
     st.session_state.chat_history = get_trim(st.session_state.chat_history, model)
  
 if not st.session_state.repo_loaded:
-    st.info("Sidebar me GitHub repo URL daal kar 'Clone & Index Repo' click karo.")
+    st.info("Enter GitHub url in the sidebaar and click 'clone & index repo' ")
