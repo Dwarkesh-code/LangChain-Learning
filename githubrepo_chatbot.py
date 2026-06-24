@@ -69,7 +69,7 @@ def get_trim(messages, model):
         start_on="human",
         include_system=True
     )
-    return trim_message
+    return trim_message.content
  
  
 def cleanup():
@@ -105,15 +105,23 @@ lang_map = {
 folder_name = "temp_git_folder_repo"
  
 router_prompt = PromptTemplate(
-    template="""You're an expert that can summarize the query to specific key words,
+    template="""You're an expert that can summarize the query to specific key words (file name, topic name) for retriever ,
     always give README.md in your answer,
+    
+    Try to provide vectore store of Your response that will help retriever to proivde a good context data.
+    
     queries --- query answer. 
     explain this repo --- README.md or main file,
-    explain this project --- project name,
+    explain this project --- project name and topic name, readme,
     explain name project how it works what it do --- provide project name , and some more files ,
     explain how is this work --- extract exact work that user ask,
     You will answer only 'query answer' not make something else by Your self Try to not hallociunate and if You did't get valid answer give "README.md main file and files "
- 
+
+    If You get a query summarize or explain this repo directly response to retriver readme.md files. Remember this.
+    
+
+
+    try to provide files and topic name as a output that helps retriever to response best context data
     Query or question : "{query}"
  
     \n\nAlso use meta data for best answer to retriever Meta data will  help You to answer the user query like how many files and which files are important and ignore the github or some waste file that not from repo.
@@ -125,9 +133,14 @@ router_prompt = PromptTemplate(
 )
  
 prompt = PromptTemplate(
-    template="""You're the github repo expert that can answer by the contest with exact query,
-    chat history is a history that AI(You) and Human(user) perivious chat it will help You generate better response.But do not print the chat history okay.
+    template="""You're the github repo expert that can answer user query with context data and meta data,
+    In this "Chat History" also provided to You to answer the query in more better way with chat history . In this HumanMessage(User) and AiMessage(You). 
     Meta data will be also help You to answer the user query like how many files and which files are important and ignore the github or some waste file that not from repo.
+    If query is not from context data so see readme.md it will help u to reponse best data and don't be hallucinate in any situation if You don't know say "I don't know" and "I can't able to understand Your query".
+    Some examples: 
+    1. summarize/explain this repo --- readme.md and some main files.
+    2. Summarize/explain this project --- Generate response from context data in context data you will get project detail if there none detail in conext data and metadata about project directly say there is no project of this name.
+    3. Rate this repo --- First read files readme and context data then Rate the repo with hones and don't change Your rating in any situation.
  
     query: "{query}",
  
