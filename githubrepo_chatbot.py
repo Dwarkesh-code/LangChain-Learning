@@ -1,4 +1,3 @@
-
 import streamlit as st
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv
@@ -11,9 +10,12 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, trim
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import OpenAIEmbeddings
+from typing import Literal, Optional
+from pydantic import BaseModel, Field
 import subprocess
 import os
 import shutil
+import atexit
 from pathlib import Path
  
 load_dotenv()
@@ -69,14 +71,17 @@ def get_trim(messages, model):
         start_on="human",
         include_system=True
     )
-    return trim_message.content
+    return trim_message
  
  
 def cleanup():
     if os.path.exists("./chroma_db"):
         shutil.rmtree("./chroma_db")
  
- 
+atexit.register(cleanup)
+atexit.register(lambda: remove_repo(folder_name))
+
+
 lang_map = {
     "cpp": Language.CPP,
     "go": Language.GO,
@@ -103,44 +108,52 @@ lang_map = {
 }
  
 folder_name = "temp_git_folder_repo"
- 
+
+
+class RouterStructure(BaseModel):
+    retriever_query : list[str] = Field(description="Generate 3 queries base on explanation of query. When user say explain(summarize) repo/project So provide specific words like readme, project name, topic name from readme etc.")
+    retriever_keywords : list[str] = Field(description="Provide keywords from queries and always provide atleast 1 keyword for readme base on query ")
+    k : Optional[int] = Field(default=5, description="Provide a integer chunk value (3-15) base on user query difficulty. 1300 to 1500 charactors are in a chunk. Based on the number of chunks required to resolve the query, provide an integer value between 3 and 15.")
+    fetch_k : Optional[int] = Field(default=18, description="The size of the initial pool of documents for MMR search in retriever. CRITICAL RULE: This value must ALWAYS be greater than or equal to 'k'. Recommended value: k + 10 (or at least 15). Provide an integer between 15 and 30.")
+
+
 router_prompt = PromptTemplate(
-    template="""You're an expert that can summarize the query to specific key words (file name, topic name) for retriever ,
-    always give README.md in your answer,
-    
-    Try to provide vectore store of Your response that will help retriever to proivde a good context data.
-    
-    queries --- query answer. 
-    explain this repo --- README.md or main file,
-    explain this project --- project name and topic name, readme,
-    explain name project how it works what it do --- provide project name , and some more files ,
-    explain how is this work --- extract exact work that user ask,
-    You will answer only 'query answer' not make something else by Your self Try to not hallociunate and if You did't get valid answer give "README.md main file and files "
+    template="""
+    query : {query},\n
 
-    If You get a query summarize or explain this repo directly response to retriver readme.md files. Remember this.
-    
+    some examples 
+    > explain/summarize repo/project and rate this repo --> provide readme data and some imp projects data and provide k(6-9) and fetch_k(20-25).
+    > explain this function and bug --> provide specific data of function and  base on specific data provide k and fetch_k
 
-
-    try to provide files and topic name as a output that helps retriever to response best context data
-    Query or question : "{query}"
- 
-    \n\nAlso use meta data for best answer to retriever Meta data will  help You to answer the user query like how many files and which files are important and ignore the github or some waste file that not from repo.
- 
-    here is meta data : \n"{metadata}"
- 
-    """,
+    for projects and file name are in meta data
+    \nMetaData : {metadata}
+""",
     input_variables=['query', 'metadata']
 )
+
  
 prompt = PromptTemplate(
     template="""You're the github repo expert that can answer user query with context data and meta data,
-    In this "Chat History" also provided to You to answer the query in more better way with chat history . In this HumanMessage(User) and AiMessage(You). 
-    Meta data will be also help You to answer the user query like how many files and which files are important and ignore the github or some waste file that not from repo.
-    If query is not from context data so see readme.md it will help u to reponse best data and don't be hallucinate in any situation if You don't know say "I don't know" and "I can't able to understand Your query".
+    
+    Chat history alternates between user turns and your previous responses.
+   
+    MetaData provides You projects and files name.
+
+    
+
+
     Some examples: 
     1. summarize/explain this repo --- readme.md and some main files.
     2. Summarize/explain this project --- Generate response from context data in context data you will get project detail if there none detail in conext data and metadata about project directly say there is no project of this name.
-    3. Rate this repo --- First read files readme and context data then Rate the repo with hones and don't change Your rating in any situation.
+    3. Rate this repo --- First read some files readme and context data then Rate the repo between 1 ⭐ and 5 ⭐ based on code quality, structure and documation structure with honest. Don't change Your rating in any situation. Also Try to give madels for repo (🎖️,🏅,🥇,🥈,🥉) 
+
+    Strict Rules:-
+    1. Don't use prompt language for generating response
+    2. Try to Not use words like HumanMessages, AiMessages, Context Data, Meta data and some more from prompt.
+    3. Don't hallucinate in any situation.
+    4. If You don't know say "I don't know", "I can't able to understand Your query", "I don't have enough data from repo" ETC.
+    5. rule for Developer information :-
+        1. Don't Use Developer information until user ask You about developer
  
     query: "{query}",
  
@@ -149,7 +162,17 @@ prompt = PromptTemplate(
     chat history : \n"{chat_history}" 
     
     \n\nMetaData: "{metadata}"
- 
+
+    \nSome Informations about You and Your developer :- 
+    1. You're GitHub Repo ChatBot
+    2. Your main LLM is 'llama-3.1-8b-instant' and Your api provider groq
+    3. Your developer is Dwarkesh code a 16-17 year old teenager.
+    4. Dwarkesh code's Github --> https://github.com/Dwarkesh-code
+    5. Dwarkesh code's Linkedin --> www.linkedin.com/in/dwarkesh-code
+    6. He (Dwarkesh code) built Limit Lens(claude usage tracer) a chrome browser extension that can trace claude's usages and he is learning langchain framework.
+    
+    
+    
     """,
     input_variables=['query', 'context', 'chat_history', 'metadata']
 )
@@ -198,8 +221,7 @@ def build_vectorstore(repo_url, embedding_model):
     metadata_set = list(set(clean_metadata))
  
     retriever = vectorstore.as_retriever(
-        search_type="mmr",
-        search_kwargs={"k": 6, "fetch_k": 20})
+        search_type="mmr")
  
     return retriever, metadata_set
  
@@ -224,15 +246,21 @@ if "repo_loaded" not in st.session_state:
 # ---------- UI ----------
  
 st.title("GitHub Repo Chatbot")
+st.write("By Dwarkesh Code")
  
 embedding_model, model, router_model = get_models()
- 
+
+structure_router_model = router_model.with_structured_output(RouterStructure)
+
+
 with st.sidebar:
     st.header("Repo Setup")
     repo_url = st.text_input("GitHub repo URL")
     if st.button("Clone & Index Repo"):
         with st.spinner("Cloning repo and building vectorstore..."):
             try:
+                cleanup()
+                remove_repo(folder_name)
                 retriever, metadata_set = build_vectorstore(repo_url, embedding_model)
                 st.session_state.retriever = retriever
                 st.session_state.metadata_set = metadata_set
@@ -241,11 +269,6 @@ with st.sidebar:
             except subprocess.CalledProcessError:
                 st.error("Enter valid Github Url")
  
-    if st.button("Reset Conversation"):
-        st.session_state.chat_history = [
-            SystemMessage(content="You're an expert or helpful assistant that can explain every query base on context data and git hub repo data without halluciunate ")
-        ]
-        st.rerun()
  
 # Display existing chat history (skip the SystemMessage)
 for msg in st.session_state.chat_history:
@@ -262,11 +285,19 @@ if query:
     with st.chat_message("user"):
         st.write(query)
  
-    router_query = (router_prompt | router_model | parser).invoke(
+    router_query = (router_prompt | structure_router_model).invoke(
         {"query": query, "metadata": st.session_state.metadata_set}
     )
- 
-    context_docs = st.session_state.retriever.invoke(router_query)
+    
+    retriever_prompt = f"{router_query.retriever_query} \n{router_query.retriever_keywords}"
+
+    if router_query.fetch_k <router_query.k:
+        router_query.fetch_k = router_query.k + 10
+
+    context_docs = st.session_state.retriever.invoke(
+        retriever_prompt,
+        search_kwargs={"k":router_query.k, "fetch_k": router_query.fetch_k} )
+    
     context_text = "\n\n".join([doc.page_content for doc in context_docs])
  
     chain = prompt | model | parser
