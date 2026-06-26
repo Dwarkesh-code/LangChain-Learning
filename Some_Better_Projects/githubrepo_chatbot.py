@@ -1,11 +1,11 @@
 import streamlit as st
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv
-from langchain_ollama import OllamaEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter, Language
 from langchain_community.vectorstores import Chroma
-from langchain_community.document_loaders import TextLoader, CSVLoader, PyPDFLoader
+from langchain_community.document_loaders import TextLoader
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage, trim_messages
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
@@ -26,23 +26,15 @@ def remove_repo(folder_name):
         shutil.rmtree(folder_name)
  
  
-def extchecker(file_path):
+def extchecker(file_path, lang_map):
     loader = None
-    if file_path.suffix.lower() in ['.png', '.jpg', '.jpeg', '.pyc', '.ico']:
-        return None
- 
-    if file_path.is_file() and ".git" not in file_path.parts:
- 
-        if file_path.suffix == '.pdf':
-            print("py")
-            loader = PyPDFLoader(file_path)
- 
-        elif file_path.suffix == '.csv':
-            loader = CSVLoader(file_path, encoding='utf-8')
- 
-        else:
-            loader = TextLoader(file_path, encoding='utf-8')
- 
+    if file_path.suffix.lower() not in ['.png', '.jpg', '.jpeg', '.pyc', '.ico']:
+    
+        if file_path.is_file() and ".git" not in file_path.parts:
+    
+            if file_path.suffix[1:] in list(lang_map.keys()) or file_path.suffix in ['.md','.txt']:
+                loader = TextLoader(file_path)
+    
     return loader
  
  
@@ -113,8 +105,8 @@ folder_name = "temp_git_folder_repo"
 class RouterStructure(BaseModel):
     retriever_query : list[str] = Field(description="Generate 3 queries base on explanation of query. When user say explain(summarize) repo/project So provide specific words like readme, project name, topic name from readme etc.")
     retriever_keywords : list[str] = Field(description="Provide keywords from queries and always provide atleast 1 keyword for readme base on query ")
-    k : Optional[int] = Field(default=5, description="Provide a integer chunk value (3-15) base on user query difficulty. 1300 to 1500 charactors are in a chunk. Based on the number of chunks required to resolve the query, provide an integer value between 3 and 15.")
-    fetch_k : Optional[int] = Field(default=18, description="The size of the initial pool of documents for MMR search in retriever. CRITICAL RULE: This value must ALWAYS be greater than or equal to 'k'. Recommended value: k + 10 (or at least 15). Provide an integer between 15 and 30.")
+    k : Optional[int] = Field(default=10, ge=8, le=50, description="Provide a integer chunk value (3-15) base on user query difficulty. 1300 to 1500 charactors are in a chunk. Based on the number of chunks required to resolve the query, provide an integer value between 8 and 50.")
+    fetch_k : Optional[int] = Field(default=18, ge=31, le=100, description="The size of the initial pool of documents for MMR search in retriever. CRITICAL RULE: This value must ALWAYS be greater than or equal to 'k'. Recommended value: k + 10 (or at least 15). Provide an integer between 31 and 100.")
 
 
 router_prompt = PromptTemplate(
@@ -122,8 +114,9 @@ router_prompt = PromptTemplate(
     query : {query},\n
 
     some examples 
-    > explain/summarize repo/project and rate this repo --> provide readme data and some imp projects data and provide k(6-9) and fetch_k(20-25).
+    > explain/summarize repo/project and rate this repo --> provide readme data and some imp projects data and provide k(15-29) and fetch_k(40 - 60).
     > explain this function and bug --> provide specific data of function and  base on specific data provide k and fetch_k
+    > if in query user say use your max pontential or use simmilar keywords like read every file, use max, deep and some more --> so give k(50)  fetch_k(100)
 
     for projects and file name are in meta data
     \nMetaData : {metadata}
@@ -152,6 +145,8 @@ prompt = PromptTemplate(
     2. Try to Not use words like HumanMessages, AiMessages, Context Data, Meta data and some more from prompt.
     3. Don't hallucinate in any situation.
     4. If You don't know say "I don't know", "I can't able to understand Your query", "I don't have enough data from repo" ETC.
+    5. Don't provide rating or madels until in query user wants the rating of repo.
+    6. Don't generate response for extra things from Your own thinking. only generate response that user want.
     5. rule for Developer information :-
         1. Don't Use Developer information until user ask You about developer
  
@@ -184,13 +179,19 @@ parser = StrOutputParser()
  
 @st.cache_resource
 def get_models():
+<<<<<<< HEAD
     embedding_model = OllamaEmbeddings(model="embeddinggemma:300m")
     model = ChatGroq(model="meta-llama/llama-4-scout-17b-16e-instruct", groq_api_key=GROQ_API_KEY)
     router_model = ChatGroq(model="qwen/qwen3-32b", groq_api_key=GROQ_API_KEY)
+=======
+    embedding_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2", model_kwargs={"device": "cpu"})
+    model = ChatGroq(model="meta-llama/llama-4-scout-17b-16e-instruct")
+    router_model = ChatGroq(model="qwen/qwen3-32b")
+>>>>>>> d6512d3 (change ollama to hugging face)
     return embedding_model, model, router_model
  
  
-def build_vectorstore(repo_url, embedding_model):
+def build_vectorstore(repo_url, embedding_model, lang_map):
     remove_repo(folder_name)
     command = ["git", "clone", repo_url, folder_name]
     os.makedirs(folder_name, exist_ok=True)
@@ -199,7 +200,7 @@ def build_vectorstore(repo_url, embedding_model):
     file_chunks = []
     for file in Path(folder_name).rglob('*'):
         if file.is_file():
-            loader = extchecker(Path(file))
+            loader = extchecker(Path(file), lang_map)
             if loader is not None:
                 ext = file.suffix.lstrip(".").lower()
                 for doc in loader.lazy_load():
@@ -261,7 +262,7 @@ with st.sidebar:
             try:
                 cleanup()
                 remove_repo(folder_name)
-                retriever, metadata_set = build_vectorstore(repo_url, embedding_model)
+                retriever, metadata_set = build_vectorstore(repo_url, embedding_model, lang_map)
                 st.session_state.retriever = retriever
                 st.session_state.metadata_set = metadata_set
                 st.session_state.repo_loaded = True
