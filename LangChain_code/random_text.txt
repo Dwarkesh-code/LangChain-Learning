@@ -1,0 +1,5 @@
+Abhi bhi experimental hai — confirmed.
+September 2025 ka ek article bhi SemanticChunker ko explicitly "experimental" tag kar raha hai. Medium
+Aur sabse interesting yeh — March 2026 mein kisi ne GitHub pe LangChain ko ek formal feature request diya hai ki SemanticChunker ko langchain-experimental se nikaal ke core library mein migrate karo — matlab abhi tak woh move nahi hua. Request abhi bhi open hai. GitHub
+SemanticChunker langchain-experimental package mein hi hai — yahi experimental hone ki sabse badi proof hai. Agar production-ready hota toh langchain-core ya langchain mein shift ho jaata. GitHub
+Toh conclusion same rehta hai — skip kar abhi.
