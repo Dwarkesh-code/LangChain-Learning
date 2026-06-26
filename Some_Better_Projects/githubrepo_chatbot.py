@@ -19,7 +19,7 @@ import atexit
 from pathlib import Path
  
 load_dotenv()
- 
+GROQ_API_KEY = st.secrets["GROQ_API_KEY"] 
  
 def remove_repo(folder_name):
     if os.path.exists(folder_name):
@@ -185,8 +185,8 @@ parser = StrOutputParser()
 @st.cache_resource
 def get_models():
     embedding_model = OllamaEmbeddings(model="embeddinggemma:300m")
-    model = ChatGroq(model="llama-3.1-8b-instant")
-    router_model = ChatGroq(model="llama-3.1-8b-instant")
+    model = ChatGroq(model="meta-llama/llama-4-scout-17b-16e-instruct", groq_api_key=GROQ_API_KEY)
+    router_model = ChatGroq(model="qwen/qwen3-32b", groq_api_key=GROQ_API_KEY)
     return embedding_model, model, router_model
  
  
