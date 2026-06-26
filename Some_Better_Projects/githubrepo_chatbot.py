@@ -147,7 +147,7 @@ prompt = PromptTemplate(
     4. If You don't know say "I don't know", "I can't able to understand Your query", "I don't have enough data from repo" ETC.
     5. Don't provide rating or madels until in query user wants the rating of repo.
     6. Don't generate response for extra things from Your own thinking. only generate response that user want.
-    5. rule for Developer information :-
+    7. rule for Developer information :-
         1. Don't Use Developer information until user ask You about developer
  
     query: "{query}",
@@ -179,15 +179,9 @@ parser = StrOutputParser()
  
 @st.cache_resource
 def get_models():
-<<<<<<< HEAD
-    embedding_model = OllamaEmbeddings(model="embeddinggemma:300m")
-    model = ChatGroq(model="meta-llama/llama-4-scout-17b-16e-instruct", groq_api_key=GROQ_API_KEY)
-    router_model = ChatGroq(model="qwen/qwen3-32b", groq_api_key=GROQ_API_KEY)
-=======
     embedding_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2", model_kwargs={"device": "cpu"})
     model = ChatGroq(model="meta-llama/llama-4-scout-17b-16e-instruct")
     router_model = ChatGroq(model="qwen/qwen3-32b")
->>>>>>> d6512d3 (change ollama to hugging face)
     return embedding_model, model, router_model
  
  
