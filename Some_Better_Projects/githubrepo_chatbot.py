@@ -1,3 +1,6 @@
+__import__('pysqlite3')
+import sys
+sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
 import streamlit as st
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv
@@ -19,7 +22,7 @@ import atexit
 from pathlib import Path
  
 load_dotenv()
-GROQ_API_KEY = st.secrets["GROQ_API_KEY"] 
+GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
  
 def remove_repo(folder_name):
     if os.path.exists(folder_name):
@@ -79,7 +82,9 @@ def cleanup():
     if os.path.exists("./chroma_db"):
         shutil.rmtree("./chroma_db")
 
+print("Before cleanup, exists:", os.path.exists("./chroma_db"))
 cleanup()
+print("After cleanup, exists:", os.path.exists("./chroma_db"))
 
 atexit.register(cleanup)
 atexit.register(lambda: remove_repo(folder_name))
