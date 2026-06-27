@@ -78,7 +78,9 @@ def get_history_string(messages):
 def cleanup():
     if os.path.exists("./chroma_db"):
         shutil.rmtree("./chroma_db")
- 
+
+cleanup()
+
 atexit.register(cleanup)
 atexit.register(lambda: remove_repo(folder_name))
 
