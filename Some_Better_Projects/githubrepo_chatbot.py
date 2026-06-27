@@ -98,7 +98,7 @@ lang_map = {
     "csharp": Language.CSHARP,
     "cobol": Language.COBOL
 }
- 
+
 folder_name = "temp_git_folder_repo"
 
 
@@ -180,8 +180,12 @@ parser = StrOutputParser()
 @st.cache_resource
 def get_models():
     embedding_model = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2", model_kwargs={"device": "cpu"})
-    model = ChatGroq(model="meta-llama/llama-4-scout-17b-16e-instruct")
-    router_model = ChatGroq(model="qwen/qwen3-32b")
+    main_models = ['llama-3.3-70b-versatile', 'openai/gpt-oss-120b', 'qwen/qwen3.6-27b', 'meta-llama/llama-4-scout-17b-16e-instruct']
+    router_models = ['openai/gpt-oss-20b', 'qwen/qwen3-32b', 'llama-3.1-8b-instant']
+    models = [ChatGroq(model=m, temperature=0.3) for m in main_models]
+    routers = [ChatGroq(model=r, temperature=0.0) for r in router_models]
+    model = models[0].with_fallbacks(models[1:])
+    router_model = routers[0].with_fallbacks(routers[1:])
     return embedding_model, model, router_model
  
  
