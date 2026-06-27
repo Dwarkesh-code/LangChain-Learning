@@ -65,6 +65,15 @@ def get_trim(messages, model):
     )
     return trim_message
  
+def get_history_string(messages):
+    lines = []
+    for msg in messages:
+        if isinstance(msg, HumanMessage):
+            lines.append(f"Human: {msg.content}")
+        elif isinstance(msg, ___):  # AIMessage ke liye
+            lines.append(f"___: {msg.content}")
+    return "\n".join(lines)
+
  
 def cleanup():
     if os.path.exists("./chroma_db"):
@@ -304,7 +313,7 @@ if query:
     result = chain.invoke({
         "query": query,
         "context": context_text,
-        "chat_history": st.session_state.chat_history,
+        "chat_history": get_history_string(st.session_state.chat_history),
         "metadata": st.session_state.metadata_set
     })
  
