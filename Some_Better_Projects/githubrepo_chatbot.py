@@ -70,8 +70,8 @@ def get_history_string(messages):
     for msg in messages:
         if isinstance(msg, HumanMessage):
             lines.append(f"Human: {msg.content}")
-        elif isinstance(msg, ___):  # AIMessage ke liye
-            lines.append(f"___: {msg.content}")
+        elif isinstance(msg, AIMessage):  
+            lines.append(f" AIMessage: {msg.content}")
     return "\n".join(lines)
 
  
