@@ -312,7 +312,9 @@ if query:
 
     context_docs = st.session_state.retriever.invoke(
         retriever_prompt,
-        search_kwargs={"k":router_query.k, "fetch_k": router_query.fetch_k} )
+        k=router_query.k,
+        fetch_k = router_query.fetch_k 
+        )
     
     context_text = "\n\n".join([doc.page_content for doc in context_docs])
  
