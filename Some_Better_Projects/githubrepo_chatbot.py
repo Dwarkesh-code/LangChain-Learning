@@ -79,8 +79,8 @@ def get_history_string(messages):
 
  
 def cleanup():
-    if os.path.exists("./chroma_db"):
-        shutil.rmtree("./chroma_db")
+    if os.path.exists("/tmp/chroma_db"):
+        shutil.rmtree("/tmp/chroma_db")
 
 print("Before cleanup, exists:", os.path.exists("./chroma_db"))
 cleanup()
