@@ -271,7 +271,7 @@ with st.sidebar:
     if st.button("Clone & Index Repo"):
         with st.spinner("Cloning repo and building vectorstore..."):
             try:
-                cleanup()
+                
                 remove_repo(folder_name)
                 retriever, metadata_set = build_vectorstore(repo_url, embedding_model, lang_map)
                 st.session_state.retriever = retriever
