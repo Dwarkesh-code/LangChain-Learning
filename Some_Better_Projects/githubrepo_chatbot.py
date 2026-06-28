@@ -249,6 +249,13 @@ with st.sidebar:
     st.header("Repo Setup")
     repo_url = st.text_input("GitHub repo URL")
     if st.button("Clone & Index Repo"):
+        st.session_state.retriever = None
+        st.session_state.metadata_set = None
+        st.session_state.repo_loaded = False
+        st.session_state.chat_history = [
+            SystemMessage(content="You're an expert or helpful assistant that can explain every query base on context data and git hub repo data without halluciunate ")
+        ]
+
         with st.spinner("Cloning repo and building vectorstore..."):
             try:
                 retriever, metadata_set = build_vectorstore(repo_url, embedding_model, lang_map)
@@ -258,6 +265,9 @@ with st.sidebar:
                 st.success("Repo indexed. Ask your questions below.")
             except subprocess.CalledProcessError:
                 st.error("Enter valid Github Url")
+                
+            except Exception as e:
+                st.error(f"Error: {e}")
 
 
 # Display existing chat history (skip the SystemMessage)
