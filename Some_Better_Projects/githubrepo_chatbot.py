@@ -206,6 +206,7 @@ def get_models():
  
  
 def build_vectorstore(repo_url, embedding_model, lang_map):
+    cleanup()
     remove_repo(folder_name)
     command = ["git", "clone", repo_url, folder_name]
     os.makedirs(folder_name, exist_ok=True)
@@ -296,7 +297,7 @@ for msg in st.session_state.chat_history:
  
 query = st.chat_input("Your Query:", disabled=not st.session_state.repo_loaded)
 
-st.write(metadata_set) 
+st.write(st.session_state.metadata_set) 
 
 if query:
     with st.chat_message("user"):
