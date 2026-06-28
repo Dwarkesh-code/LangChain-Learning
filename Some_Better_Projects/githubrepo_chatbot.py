@@ -296,7 +296,7 @@ for msg in st.session_state.chat_history:
  
 query = st.chat_input("Your Query:", disabled=not st.session_state.repo_loaded)
 
-st.write(st.session_state.metadata_set) 
+st.write(metadata_set) 
 
 if query:
     with st.chat_message("user"):
