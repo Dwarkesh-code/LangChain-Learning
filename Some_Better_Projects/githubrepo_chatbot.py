@@ -82,10 +82,7 @@ def cleanup():
     if os.path.exists("/tmp/chroma_db"):
         shutil.rmtree("/tmp/chroma_db")
 
-print("Before cleanup, exists:", os.path.exists("./chroma_db"))
-cleanup()
-print("After cleanup, exists:", os.path.exists("./chroma_db"))
-
+folder_name = "temp_git_folder_repo"
 atexit.register(cleanup)
 atexit.register(lambda: remove_repo(folder_name))
 
@@ -115,7 +112,7 @@ lang_map = {
     "cobol": Language.COBOL
 }
 
-folder_name = "temp_git_folder_repo"
+
 
 
 class RouterStructure(BaseModel):
@@ -206,7 +203,6 @@ def get_models():
  
  
 def build_vectorstore(repo_url, embedding_model, lang_map):
-    cleanup()
     remove_repo(folder_name)
     command = ["git", "clone", repo_url, folder_name]
     os.makedirs(folder_name, exist_ok=True)
