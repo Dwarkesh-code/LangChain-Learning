@@ -1,6 +1,7 @@
 __import__('pysqlite3')
 import sys
 sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+import chromadb
 import streamlit as st
 from langchain_groq import ChatGroq
 from dotenv import load_dotenv
@@ -207,6 +208,7 @@ def build_vectorstore(repo_url, embedding_model, lang_map):
     command = ["git", "clone", repo_url, folder_name]
     os.makedirs(folder_name, exist_ok=True)
     subprocess.run(command, check=True, capture_output=True, text=True)
+    chroma_client = chromadb.EphemeralClient()
  
     file_chunks = []
     for file in Path(folder_name).rglob('*'):
@@ -222,7 +224,7 @@ def build_vectorstore(repo_url, embedding_model, lang_map):
     vectorstore = Chroma.from_documents(
         documents=file_chunks,
         embedding=embedding_model,
-        persist_directory="/tmp/chroma_db"
+        persist_directory=chroma_client
     )
  
     clean_metadata = []
