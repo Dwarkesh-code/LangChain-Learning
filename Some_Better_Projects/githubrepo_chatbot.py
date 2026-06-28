@@ -224,7 +224,7 @@ def build_vectorstore(repo_url, embedding_model, lang_map):
     vectorstore = Chroma.from_documents(
         documents=file_chunks,
         embedding=embedding_model,
-        persist_directory=chroma_client
+        client=chroma_client
     )
  
     clean_metadata = []
