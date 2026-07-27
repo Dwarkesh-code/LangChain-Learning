@@ -33,7 +33,7 @@ def extchecker(file_path, lang_map):
     if file_path.suffix.lower() not in ['.png', '.jpg', '.jpeg', '.pyc', '.ico']:
         if file_path.is_file() and ".git" not in file_path.parts:
             if file_path.suffix[1:] in list(lang_map.keys()) or file_path.suffix in ['.md', '.txt']:
-                loader = TextLoader(file_path)
+                loader = TextLoader(file_path, autodetect_encoding=True)
     return loader
 
 
