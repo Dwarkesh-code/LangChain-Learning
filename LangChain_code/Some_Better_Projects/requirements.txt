@@ -9,3 +9,4 @@ chromadb
 python-dotenv
 pydantic
 pysqlite3-binary
+chardet

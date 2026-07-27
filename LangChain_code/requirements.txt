@@ -6,8 +6,6 @@ langchain-text-splitters
 langgraph
 
 # LLM Providers
-langchain-openai
-langchain-anthropic
 langchain-google-genai
 langchain-ollama
 langchain-groq
@@ -30,3 +28,4 @@ tiktoken
 openai
 google-generativeai
 pysqlite3-binary
+chardet
